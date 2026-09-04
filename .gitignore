@@ -12,3 +12,14 @@
 *.aab
 /app/build/
 /app/release/
+
+# --- website/ (Next.js) ---
+/website/node_modules/
+/website/.next/
+/website/out/
+/website/next-env.d.ts
+/website/*.tsbuildinfo
+/website/.env
+/website/.env*.local
+/website/npm-debug.log*
+/website/.vercel
