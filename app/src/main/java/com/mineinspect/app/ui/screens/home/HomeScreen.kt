@@ -19,7 +19,8 @@ import com.mineinspect.app.ui.theme.*
 
 @Composable
 fun HomeScreen(
-    onStartInspection: () -> Unit = {}
+    onStartInspection: () -> Unit = {},
+    onOpenMap: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(NavTab.INSPECTIONS) }
 
@@ -40,18 +41,40 @@ fun HomeScreen(
         ) {
             // Header
             AppTopBar(
-                title = "Assigned Inspections",
-                subtitle = "Inspector INS-102 • Shift #402",
+                title = when (selectedTab) {
+                    NavTab.INSPECTIONS -> "Assigned Inspections"
+                    NavTab.HAZARDS -> "Hazard Reports"
+                    NavTab.MAP -> "Facility Map"
+                    NavTab.SYNC -> "Sync Center"
+                },
+                subtitle = when (selectedTab) {
+                    NavTab.INSPECTIONS -> "Inspector INS-102 • Shift #402"
+                    NavTab.HAZARDS -> "Open & Recent Flags"
+                    NavTab.MAP -> "Live Position Overview"
+                    NavTab.SYNC -> "Offline Buffer Status"
+                },
                 showBack = false,
                 online = true
             )
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimens.marginScreen)
-            ) {
-                // Active / Priority Mine Card
+            when (selectedTab) {
+                NavTab.INSPECTIONS -> InspectionsTabContent(onStartInspection)
+                NavTab.HAZARDS -> HazardsTabContent()
+                NavTab.MAP -> MapTabContent(onOpenMap)
+                NavTab.SYNC -> SyncTabContent()
+            }
+        }
+    }
+}
+
+@Composable
+private fun InspectionsTabContent(onStartInspection: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.marginScreen)
+    ) {
+        // Active / Priority Mine Card
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -173,18 +196,146 @@ fun HomeScreen(
                         iconVector = Icons.Filled.Engineering,
                         title = "Appalachian Slope Mine #2",
                         subtitle = "Ventilation & Methane Check",
-                        trailingBadge = { StatusBadge(text = "PENDING", status = BadgeStatus.NEUTRAL) }
+                        trailingBadge = { StatusBadge(text = "PENDING", status = BadgeStatus.NEUTRAL) },
+                        onClick = onStartInspection
                     )
                     ChecklistRow(
                         iconVector = Icons.Filled.CheckCircle,
                         title = "Cumberland South Portal",
                         subtitle = "Quarterly Compliance Audit",
-                        trailingBadge = { StatusBadge(text = "COMPLETED", status = BadgeStatus.SUCCESS) }
+                        trailingBadge = { StatusBadge(text = "COMPLETED", status = BadgeStatus.SUCCESS) },
+                        onClick = onStartInspection
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
-            }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun HazardsTabContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.marginScreen)
+    ) {
+        StatCardRow {
+            StatCard(label = "Open Hazards", value = "3", captionColor = WarningText, modifier = Modifier.weight(1f))
+            StatCard(label = "Critical", value = "1", caption = "SECTOR B", captionColor = CriticalText, modifier = Modifier.weight(1f))
+            StatCard(label = "Resolved (7d)", value = "12", captionColor = Tertiary, modifier = Modifier.weight(1f))
         }
+
+        Spacer(Modifier.height(Dimens.sectionGap))
+        Text("Active Flags", style = AppType.headlineMd, color = OnSurface)
+        Spacer(Modifier.height(10.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChecklistRow(
+                iconVector = Icons.Filled.Warning,
+                title = "Loose Rock — Section B Corridor",
+                subtitle = "Reported 2h ago by INS-088",
+                trailingBadge = { StatusBadge(text = "CRITICAL", status = BadgeStatus.CRITICAL) }
+            )
+            ChecklistRow(
+                iconVector = Icons.Filled.SensorsOff,
+                title = "Gas Sensor Drift — Shaft 4B",
+                subtitle = "Reported 5h ago by INS-102",
+                trailingBadge = { StatusBadge(text = "WARNING", status = BadgeStatus.WARNING) }
+            )
+            ChecklistRow(
+                iconVector = Icons.Filled.CheckCircle,
+                title = "PPE Non-Compliance — Portal 2",
+                subtitle = "Resolved yesterday",
+                trailingBadge = { StatusBadge(text = "RESOLVED", status = BadgeStatus.SUCCESS) }
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun MapTabContent(onOpenMap: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.marginScreen)
+    ) {
+        StatusBadge("LIVE TELEMETRY", BadgeStatus.CRITICAL)
+        Spacer(Modifier.height(8.dp))
+        Text("Blackwood Colliery — Shaft 4B", style = AppType.headlineLg, color = OnSurface, fontWeight = FontWeight.Bold)
+        Text("Last position update 12s ago", style = AppType.bodySm, color = Secondary)
+
+        Spacer(Modifier.height(Dimens.gutterCard))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(RoundedCornerShape(Dimens.radiusXl))
+                .background(SurfaceContainerLow)
+        )
+
+        Spacer(Modifier.height(Dimens.sectionGap))
+        PrimaryActionButton(
+            text = "Open Full Route Map",
+            leadingIcon = { Icon(Icons.Filled.Map, null, tint = OnPrimary) },
+            onClick = onOpenMap
+        )
+
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun SyncTabContent() {
+    var syncing by remember { mutableStateOf(false) }
+    LaunchedEffect(syncing) {
+        if (syncing) {
+            kotlinx.coroutines.delay(1500)
+            syncing = false
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.marginScreen)
+    ) {
+        StatCardRow {
+            StatCard(label = "Queued Items", value = "4", captionColor = WarningText, modifier = Modifier.weight(1f))
+            StatCard(label = "Last Sync", value = "10:12 AM", captionColor = Secondary, modifier = Modifier.weight(1f))
+            StatCard(label = "Network", value = "4G Stable", captionColor = Tertiary, modifier = Modifier.weight(1f))
+        }
+
+        Spacer(Modifier.height(Dimens.sectionGap))
+        Text("Unsynced Records", style = AppType.headlineMd, color = OnSurface)
+        Spacer(Modifier.height(10.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChecklistRow(
+                iconVector = Icons.Filled.PhotoCamera,
+                title = "Evidence Photo — Conveyor #2",
+                subtitle = "Captured 10:21 AM",
+                trailingBadge = { StatusBadge(text = "QUEUED", status = BadgeStatus.WARNING) },
+                showChevron = false
+            )
+            ChecklistRow(
+                iconVector = Icons.Filled.Description,
+                title = "Section B Checklist",
+                subtitle = "Completed 10:18 AM",
+                trailingBadge = { StatusBadge(text = "QUEUED", status = BadgeStatus.WARNING) },
+                showChevron = false
+            )
+        }
+
+        Spacer(Modifier.height(Dimens.sectionGap))
+        PrimaryActionButton(
+            text = if (syncing) "Syncing…" else "Sync Now",
+            loading = syncing,
+            leadingIcon = { Icon(Icons.Filled.Sync, null, tint = OnPrimary) },
+            onClick = { syncing = true }
+        )
+
+        Spacer(Modifier.height(24.dp))
     }
 }
