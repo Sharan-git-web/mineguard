@@ -11,15 +11,22 @@ import androidx.compose.material.icons.filled.ChecklistRtl
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.mineinspect.app.ui.components.*
 import com.mineinspect.app.ui.theme.*
 
 @Composable
-fun RouteMapScreen(onBack: () -> Unit) {
+fun RouteMapScreen(
+    onBack: () -> Unit,
+    viewModel: RouteMapViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
     Column(Modifier.fillMaxSize().background(Surface).verticalScroll(rememberScrollState())) {
         AppTopBar(title = "MineInspect", subtitle = "Map", onBack = onBack)
 
@@ -54,9 +61,9 @@ fun RouteMapScreen(onBack: () -> Unit) {
             Spacer(Modifier.height(10.dp))
 
             listOf(
-                Triple("Portal Main Entrance", "Cleared 08:42 UTC • Atmospheric Pass", "0.0 km"),
-                Triple("Section A Drift Hub", "Cleared 09:14 UTC • 12 Rockbolts Logged", "0.4 km"),
-                Triple("Section B Corridor", "18 Checkpoints Logged • Drift 04-West", "Active Now"),
+                Triple("Mine 1 Entrance", "Cleared 08:42 UTC • Atmospheric Pass", "0.0 km"),
+                Triple("Section 1 Hub", "Cleared 09:14 UTC • 12 Checkpoints Logged", "0.4 km"),
+                Triple("Section 2 Corridor", "18 Checkpoints Logged • Active Zone", "Active Now"),
             ).forEach { (title, subtitle, trail) ->
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(Dimens.radiusMd))
@@ -79,9 +86,15 @@ fun RouteMapScreen(onBack: () -> Unit) {
             )
             Spacer(Modifier.height(10.dp))
             SecondaryActionButton(
-                text = "Drop Geo Hazard Pin",
+                text = when {
+                    uiState.pinDropped -> "Hazard Pin Logged"
+                    !uiState.hasInspectionContext -> "Drop Geo Hazard Pin (start an inspection first)"
+                    uiState.isDroppingPin -> "Logging Pin…"
+                    else -> "Drop Geo Hazard Pin"
+                },
                 leadingIcon = { Icon(Icons.Filled.AddLocationAlt, null, tint = OnSurface) },
-                onClick = {}
+                enabled = uiState.hasInspectionContext && !uiState.isDroppingPin && !uiState.pinDropped,
+                onClick = viewModel::onDropHazardPin
             )
             Spacer(Modifier.height(Dimens.sectionGap))
         }

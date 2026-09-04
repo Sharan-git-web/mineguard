@@ -18,27 +18,30 @@ import androidx.compose.ui.unit.dp
 import com.mineinspect.app.ui.components.*
 import com.mineinspect.app.ui.theme.*
 
-private fun sectionTitle(sectionId: String): String = when (sectionId) {
-    "A" -> "Primary Pit Haul Ramp"
-    "B" -> "Primary Conveyor & Chute"
-    "C" -> "Explosives Magazine & Bunker"
-    else -> "Sector Inspection"
+private fun sectionTitle(sectionId: String): String = when (sectionId.uppercase()) {
+    "1", "A" -> "Section 1"
+    "2", "B" -> "Section 2"
+    "3", "C" -> "Section 3"
+    else -> "Section $sectionId"
 }
 
 @Composable
 fun SectionStartScreen(
+    inspectionId: String,
     sectionId: String,
     onBack: () -> Unit,
     onBegin: () -> Unit
 ) {
+    val displaySection = if (sectionId.equals("B", ignoreCase = true)) "2" else if (sectionId.equals("A", ignoreCase = true)) "1" else if (sectionId.equals("C", ignoreCase = true)) "3" else sectionId
+
     Column(Modifier.fillMaxSize().background(Surface).verticalScroll(rememberScrollState())) {
         AppTopBar(title = "Active Checkpoint", subtitle = "MineInspect", onBack = onBack)
 
         Column(Modifier.padding(horizontal = Dimens.marginScreen)) {
-            StatusBadge("SECTOR READINESS PROTOCOL", BadgeStatus.CRITICAL)
+            StatusBadge("SECTION READINESS PROTOCOL", BadgeStatus.CRITICAL)
             Spacer(Modifier.height(8.dp))
-            Text("Section $sectionId — ${sectionTitle(sectionId)}", style = AppType.headlineLg, color = OnSurface, fontWeight = FontWeight.Bold)
-            Text("Level 4 Deep Subsurface • ID #CV-882", style = AppType.bodySm, color = Secondary)
+            Text("Section $displaySection", style = AppType.headlineLg, color = OnSurface, fontWeight = FontWeight.Bold)
+            Text("Level 4 • ID #CV-882", style = AppType.bodySm, color = Secondary)
 
             Spacer(Modifier.height(Dimens.gutterCard))
             Row(

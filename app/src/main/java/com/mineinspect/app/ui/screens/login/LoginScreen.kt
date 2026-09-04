@@ -1,12 +1,12 @@
 package com.mineinspect.app.ui.screens.login
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -16,15 +16,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.mineinspect.app.BuildConfig
 import com.mineinspect.app.ui.components.PrimaryActionButton
+import com.mineinspect.app.ui.components.SecondaryActionButton
 import com.mineinspect.app.ui.theme.*
-import kotlinx.coroutines.delay
 
 @Composable
-fun LoginScreen(onSignIn: () -> Unit) {
-    var pinVisible by remember { mutableStateOf(false) }
-    var signingIn by remember { mutableStateOf(false) }
+fun LoginScreen(
+    onSignIn: () -> Unit,
+    viewModel: LoginViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.signedIn.collect {
+            onSignIn()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -116,14 +129,22 @@ fun LoginScreen(onSignIn: () -> Unit) {
             ) {
                 Icon(Icons.Filled.Badge, contentDescription = null, tint = Secondary)
                 Spacer(Modifier.width(10.dp))
-                Text(
-                    "INS-102",
-                    style = AppType.headlineMd,
-                    color = OnSurface,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Tertiary)
+                Box(Modifier.weight(1f)) {
+                    if (uiState.inspectorId.isEmpty()) {
+                        Text("Enter Inspector ID", style = AppType.headlineMd, color = Secondary)
+                    }
+                    BasicTextField(
+                        value = uiState.inspectorId,
+                        onValueChange = viewModel::onInspectorIdChange,
+                        singleLine = true,
+                        textStyle = AppType.headlineMd.copy(color = OnSurface, fontWeight = FontWeight.Bold),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (uiState.inspectorId.isNotBlank()) {
+                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Tertiary)
+                }
             }
 
             Spacer(Modifier.height(16.dp))
@@ -141,55 +162,64 @@ fun LoginScreen(onSignIn: () -> Unit) {
             ) {
                 Icon(Icons.Filled.Lock, contentDescription = null, tint = Secondary)
                 Spacer(Modifier.width(10.dp))
-                Text(
-                    if (pinVisible) "84920119" else "••••••••",
-                    style = AppType.headlineLg,
-                    color = OnSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = { pinVisible = !pinVisible }) {
+                Box(Modifier.weight(1f)) {
+                    if (uiState.pin.isEmpty()) {
+                        Text("Enter PIN", style = AppType.headlineLg, color = Secondary)
+                    }
+                    BasicTextField(
+                        value = uiState.pin,
+                        onValueChange = viewModel::onPinChange,
+                        singleLine = true,
+                        textStyle = AppType.headlineLg.copy(color = OnSurface),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        visualTransformation = if (uiState.pinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                IconButton(onClick = viewModel::onTogglePinVisibility) {
                     Icon(
-                        if (pinVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                        if (uiState.pinVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
                         contentDescription = "Toggle PIN visibility",
                         tint = Secondary
                     )
                 }
             }
 
+            uiState.errorMessage?.let { message ->
+                Spacer(Modifier.height(8.dp))
+                Text(message, style = AppType.bodySm, color = ErrorColor)
+            }
+
             Spacer(Modifier.height(20.dp))
 
             // Sign in action
             PrimaryActionButton(
-                text = if (signingIn) "AUTHORIZING..." else "SIGN IN TO FIELD TERMINAL",
-                loading = signingIn,
+                text = if (uiState.isSigningIn) "AUTHORIZING..." else "SIGN IN TO FIELD TERMINAL",
+                loading = uiState.isSigningIn,
                 trailingIcon = {
-                    if (!signingIn) Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = OnPrimary)
+                    if (!uiState.isSigningIn) Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = OnPrimary)
                 },
-                onClick = {
-                    signingIn = true
-                }
+                onClick = viewModel::onSignInClick
             )
 
-            LaunchedEffect(signingIn) {
-                if (signingIn) {
-                    delay(500)
-                    onSignIn()
-                }
+            if (BuildConfig.DEBUG) {
+                Spacer(Modifier.height(10.dp))
+                SecondaryActionButton(
+                    text = "Skip Login (Dev Build Only)",
+                    onClick = viewModel::onDevBypassClick
+                )
             }
 
             Spacer(Modifier.height(12.dp))
 
+            // Biometric hardware isn't integrated yet (no biometric API call exists) — this
+            // row stays visually in place but no longer bypasses real credential validation.
             Row(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Dimens.radiusMd))
                     .background(SurfaceContainerLow)
-                    .padding(12.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onSignIn
-                    ),
+                    .padding(12.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {

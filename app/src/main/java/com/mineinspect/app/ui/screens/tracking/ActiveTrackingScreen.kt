@@ -15,15 +15,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.mineinspect.app.ui.components.*
 import com.mineinspect.app.ui.theme.*
 import kotlinx.coroutines.delay
 
 @Composable
 fun ActiveTrackingScreen(
+    inspectionId: String,
     onBack: () -> Unit,
     onViewMap: () -> Unit,
-    onViewAreas: () -> Unit
+    onViewAreas: () -> Unit,
+    viewModel: ActiveTrackingViewModel = hiltViewModel()
 ) {
     var minutes by remember { mutableStateOf(14) }
     var seconds by remember { mutableStateOf(25) }
@@ -35,9 +38,15 @@ fun ActiveTrackingScreen(
         }
     }
 
-    var markerLogged by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        viewModel.startTrackingIfPermitted()
+    }
+
+    val uiState by viewModel.uiState.collectAsState()
+    val pointCount by viewModel.pointCount.collectAsState()
+    val markerLogged = uiState.markerLogged
     LaunchedEffect(markerLogged) {
-        if (markerLogged) { delay(2200); markerLogged = false }
+        if (markerLogged) { delay(2200); viewModel.onMarkerFlashConsumed() }
     }
 
     Column(
@@ -60,7 +69,7 @@ fun ActiveTrackingScreen(
                 Column {
                     StatusBadge("ACTIVE INSPECTION SESSION", BadgeStatus.CRITICAL)
                     Spacer(Modifier.height(6.dp))
-                    Text("Portal North Quad", style = AppType.headlineMd, color = OnSurface, fontWeight = FontWeight.Bold)
+                    Text("Mine 1", style = AppType.headlineMd, color = OnSurface, fontWeight = FontWeight.Bold)
                 }
                 StatusBadge("INS-2026-0098", BadgeStatus.NEUTRAL)
             }
@@ -78,10 +87,13 @@ fun ActiveTrackingScreen(
                 Icon(Icons.Filled.GpsFixed, contentDescription = null, tint = Primary)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("GPS ROUTE TRACKING ACTIVE", style = AppType.labelMd, color = OnSurface)
-                    Text("Recording 1 point every 5 seconds", style = AppType.bodySm, color = Secondary)
+                    Text(
+                        if (uiState.isTracking) "GPS ROUTE TRACKING ACTIVE" else "GPS TRACKING UNAVAILABLE",
+                        style = AppType.labelMd, color = OnSurface
+                    )
+                    Text("Recording a real device fix every 20 seconds", style = AppType.bodySm, color = Secondary)
                 }
-                StatusBadge("5s REC", BadgeStatus.CRITICAL)
+                StatusBadge(if (uiState.isTracking) "20s REC" else "NO PERMISSION", if (uiState.isTracking) BadgeStatus.CRITICAL else BadgeStatus.WARNING)
             }
 
             Spacer(Modifier.height(Dimens.sectionGap))
@@ -89,7 +101,7 @@ fun ActiveTrackingScreen(
             Text("SESSION TELEMETRY", style = AppType.labelSm, color = Secondary)
             Spacer(Modifier.height(8.dp))
             StatCardRow {
-                StatCard("Start Location", "Portal North #02", modifier = Modifier.weight(1f))
+                StatCard("Start Location", "Mine 1 Entrance", modifier = Modifier.weight(1f))
                 StatCard("Start Time", "10:02 AM", modifier = Modifier.weight(1f))
             }
             Spacer(Modifier.height(Dimens.gutterCard))
@@ -115,9 +127,12 @@ fun ActiveTrackingScreen(
             Spacer(Modifier.height(Dimens.sectionGap))
 
             StatCardRow {
-                StatCard("Accuracy", "6 m", "Optimal", Tertiary, modifier = Modifier.weight(1f))
-                StatCard("Logged", "480 m", "+12m/min", Secondary, modifier = Modifier.weight(1f))
-                StatCard("Points", "28 pts", "0 skipped", Secondary, modifier = Modifier.weight(1f))
+                StatCard(
+                    "Accuracy",
+                    uiState.lastAccuracyMeters?.let { "${"%.1f".format(it)} m" } ?: "—",
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard("Points", "$pointCount pts", modifier = Modifier.weight(1f))
             }
 
             Spacer(Modifier.height(Dimens.sectionGap))
@@ -132,7 +147,7 @@ fun ActiveTrackingScreen(
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Breadcrumb Trail", style = AppType.labelMd, color = OnSurface)
-                    Text("Haul Road 04 / Sector B", style = AppType.bodySm, color = Secondary)
+                    Text("$pointCount points logged", style = AppType.bodySm, color = Secondary)
                 }
                 Spacer(Modifier.height(10.dp))
                 Box(
@@ -143,20 +158,24 @@ fun ActiveTrackingScreen(
                         .background(SurfaceContainerHigh)
                 )
                 Spacer(Modifier.height(8.dp))
-                Text("Latest Node #28 (Elev. 342m)", style = AppType.bodySm, color = Primary)
+                Text(
+                    if (pointCount > 0) "Latest Node #$pointCount" else "No points logged yet",
+                    style = AppType.bodySm,
+                    color = Primary
+                )
             }
 
             Spacer(Modifier.height(Dimens.sectionGap))
 
             SecondaryActionButton(
-                text = if (markerLogged) "Marker Logged at Point #29" else "Drop Quick Geo-Hazard Marker",
+                text = if (markerLogged) "Marker Logged" else "Drop Quick Geo-Hazard Marker",
                 leadingIcon = {
                     Icon(
                         if (markerLogged) Icons.Filled.Check else Icons.Filled.AddLocationAlt,
                         null, tint = if (markerLogged) Tertiary else OnSurface
                     )
                 },
-                onClick = { markerLogged = true }
+                onClick = viewModel::onDropHazardMarker
             )
 
             Spacer(Modifier.height(Dimens.gutterCard))

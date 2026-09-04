@@ -54,11 +54,13 @@ fun SecondaryActionButton(
     text: String,
     modifier: Modifier = Modifier,
     height: Dp = Dimens.touchLarge,
+    enabled: Boolean = true,
     leadingIcon: (@Composable () -> Unit)? = null,
     onClick: () -> Unit
 ) {
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.fillMaxWidth().height(height),
         shape = RoundedCornerShape(Dimens.radiusMd),
         colors = ButtonDefaults.outlinedButtonColors(
