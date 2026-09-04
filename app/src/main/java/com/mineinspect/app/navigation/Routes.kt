@@ -1,0 +1,32 @@
+package com.mineinspect.app.navigation
+
+object Routes {
+    const val LOGIN = "login"
+    const val HOME = "home"
+    const val MINE_BRIEFING = "mine_briefing"
+    const val GPS_GATE = "gps_gate"
+    const val ACTIVE_TRACKING = "active_tracking"
+    const val ROUTE_MAP = "route_map"
+    const val AREAS_COVERAGE = "areas_coverage"
+    const val SECTION_START = "section_start/{sectionId}"
+    const val SECTION_MONITORING = "section_monitoring/{sectionId}"
+    const val ANOMALY_WARNING = "anomaly_warning"
+    const val RANDOM_EVIDENCE = "random_evidence"
+    const val EVIDENCE_CAPTURE = "evidence_capture"
+    const val EVIDENCE_DETAILS = "evidence_details"
+    const val PPE_VERIFICATION = "ppe_verification"
+    const val MANUAL_OBSERVATION = "manual_observation"
+    const val MEASUREMENT_ENTRY = "measurement_entry"
+    const val WORKER_VERIFICATION = "worker_verification"
+    const val SECTION_COMPLETION = "section_completion/{sectionId}"
+    const val INSPECTION_SUMMARY = "inspection_summary"
+    const val FINAL_REVIEW = "final_review"
+    const val FINAL_LOCATION_CHECK = "final_location_check"
+    const val OFFLINE_SAVE = "offline_save"
+    const val SYNCHRONIZATION = "synchronization"
+    const val SUBMISSION_COMPLETE = "submission_complete"
+
+    fun sectionStart(sectionId: String) = "section_start/$sectionId"
+    fun sectionMonitoring(sectionId: String) = "section_monitoring/$sectionId"
+    fun sectionCompletion(sectionId: String) = "section_completion/$sectionId"
+}
