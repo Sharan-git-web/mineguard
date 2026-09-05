@@ -125,11 +125,11 @@ private fun InspectionsTabContent(mines: List<MineCacheEntity>, onStartInspectio
 
                     PrimaryActionButton(
                         text = "RESUME FIELD BRIEFING",
-                        enabled = mines.isNotEmpty(),
+                        enabled = true,
                         trailingIcon = {
                             Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = OnPrimary)
                         },
-                        onClick = { mines.firstOrNull()?.let { onStartInspection(it.mineId) } }
+                        onClick = { onStartInspection(mines.firstOrNull()?.mineId ?: "dev-mine-1") }
                     )
                 }
 
@@ -154,22 +154,10 @@ private fun InspectionsTabContent(mines: List<MineCacheEntity>, onStartInspectio
                         captionColor = WarningText,
                         modifier = Modifier.weight(1f)
                     )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                StatCardRow {
                     StatCard(
                         label = "Hazard Index",
                         value = "Low (0.12)",
                         caption = "SECTION 2 CLEAR",
-                        captionColor = Tertiary,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        label = "SHA-256 Ledger",
-                        value = "Verified",
-                        caption = "TAMPER-EVIDENT",
                         captionColor = Tertiary,
                         modifier = Modifier.weight(1f)
                     )

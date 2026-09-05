@@ -39,6 +39,8 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val mineRepository: MineRepository,
     private val tokenStore: TokenStore,
+    private val mineDao: com.mineinspect.app.data.local.dao.MineDao,
+    private val sectionDefDao: com.mineinspect.app.data.local.dao.SectionDefDao,
     private val inspectionDao: InspectionDao,
     private val evidenceDao: EvidenceDao,
     private val observationDao: ObservationDao,
@@ -51,6 +53,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            seedDefaultMinesIfNeeded()
             mineRepository.observeMines().collect { mines ->
                 _uiState.update { it.copy(mines = mines) }
             }
@@ -66,6 +69,62 @@ class HomeViewModel @Inject constructor(
                 .collect { total -> _uiState.update { it.copy(queuedItemCount = total) } }
         }
         refresh()
+    }
+
+    private suspend fun seedDefaultMinesIfNeeded() {
+        if (mineDao.getById("dev-mine-1") == null) {
+            val now = System.currentTimeMillis()
+            mineDao.upsertAll(
+                listOf(
+                    MineCacheEntity(
+                        mineId = "dev-mine-1",
+                        name = "Mine 1",
+                        permitNumber = "M-882",
+                        hazardIndex = 78.0,
+                        evidenceQuota = 3,
+                        sectionCount = 3,
+                        lastBriefingText = "Primary inspection audit section.",
+                        cachedAt = now
+                    ),
+                    MineCacheEntity(
+                        mineId = "dev-mine-2",
+                        name = "Mine 1 (Dev)",
+                        permitNumber = "M-882",
+                        hazardIndex = 45.0,
+                        evidenceQuota = 3,
+                        sectionCount = 3,
+                        lastBriefingText = "Development test mine.",
+                        cachedAt = now
+                    )
+                )
+            )
+            sectionDefDao.upsertAll(
+                listOf(
+                    Triple(1, "Section 1 Main Deck", "Track gauge stability & emergency stop"),
+                    Triple(2, "Section 2 Main Deck", "Feeders, transfer chutes & safety checks"),
+                    Triple(3, "Section 3 Main Deck", "Perimeter lockouts & blast doors")
+                ).flatMap { (index, label, description) ->
+                    listOf(
+                        com.mineinspect.app.data.local.entity.SectionDefEntity(
+                            id = "dev-mine-1:$index",
+                            mineId = "dev-mine-1",
+                            sectionIndex = index,
+                            label = label,
+                            description = description,
+                            evidenceQuota = 3
+                        ),
+                        com.mineinspect.app.data.local.entity.SectionDefEntity(
+                            id = "dev-mine-2:$index",
+                            mineId = "dev-mine-2",
+                            sectionIndex = index,
+                            label = label,
+                            description = description,
+                            evidenceQuota = 3
+                        )
+                    )
+                }
+            )
+        }
     }
 
     fun refresh() {

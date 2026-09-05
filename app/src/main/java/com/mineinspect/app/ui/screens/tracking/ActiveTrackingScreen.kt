@@ -137,49 +137,6 @@ fun ActiveTrackingScreen(
 
             Spacer(Modifier.height(Dimens.sectionGap))
 
-            // Breadcrumb trail placeholder (real map lives on the Route Map screen)
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(Dimens.radiusMd))
-                    .background(SurfaceContainerLow)
-                    .padding(14.dp)
-            ) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Breadcrumb Trail", style = AppType.labelMd, color = OnSurface)
-                    Text("$pointCount points logged", style = AppType.bodySm, color = Secondary)
-                }
-                Spacer(Modifier.height(10.dp))
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(140.dp)
-                        .clip(RoundedCornerShape(Dimens.radiusDefault))
-                        .background(SurfaceContainerHigh)
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    if (pointCount > 0) "Latest Node #$pointCount" else "No points logged yet",
-                    style = AppType.bodySm,
-                    color = Primary
-                )
-            }
-
-            Spacer(Modifier.height(Dimens.sectionGap))
-
-            SecondaryActionButton(
-                text = if (markerLogged) "Marker Logged" else "Drop Quick Geo-Hazard Marker",
-                leadingIcon = {
-                    Icon(
-                        if (markerLogged) Icons.Filled.Check else Icons.Filled.AddLocationAlt,
-                        null, tint = if (markerLogged) Tertiary else OnSurface
-                    )
-                },
-                onClick = viewModel::onDropHazardMarker
-            )
-
-            Spacer(Modifier.height(Dimens.gutterCard))
-
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.gutterCard)) {
                 SecondaryActionButton(
                     text = "Live Route Map",
